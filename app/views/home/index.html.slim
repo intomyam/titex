@@ -1,5 +1,17 @@
 header#header
   h1.title.logo Slim Test
 
-- Department.all.each do |department|
-  = department.name
+table.mdl-data-table.mdl-js-data-table.mdl-shadow--2dp
+  thead
+    tr
+      th.mdl-data-table__cell--non-numeric
+        = 'Code'
+      th.mdl-data-table__cell--non-numeric
+        = '授業名'
+  tbody
+    - @course.lectures.each do |lecture|
+      tr
+        td.mdl-data-table__cell--non-numeric
+          = lecture.subject_code
+        td.mdl-data-table__cell--non-numeric
+          = lecture.name
