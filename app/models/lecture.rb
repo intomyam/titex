@@ -4,5 +4,7 @@ class Lecture < ActiveRecord::Base
   has_many :lecture_lecturers
   has_many :lecturers, through: :lecture_lecturers
   has_many :course_lectures
-  has_many :course, through: :course_lectures
+  has_many :courses, through: :course_lectures
+  has_many :section_lectures
+  has_many :sections, through: :section_lectures
 end
