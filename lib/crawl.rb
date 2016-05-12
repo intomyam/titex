@@ -10,12 +10,13 @@ class Crawl
       doc = Nokogiri::HTML.parse(res.body)
       department = Department.find_or_create_by(code: department_code, name: doc.title[0..-18])
 
-      doc.xpath('//*[@id="left-body-1"]/ul/li[contains(@class,"selected")]').css('ul').css('li').each do |section_li|
+      doc.xpath('//*[@id="left-body-1"]/ul/li[contains(@class,"selected")]').css('ul').css('>li').each do |section_li|
         query_hash = Hash[URI::decode_www_form(section_li.at_css('a').attribute('href').value)]
         section_code = query_hash['KeiCD'] || query_hash['KamokuCD']
         Section.find_or_create_by(name: section_li.text,
                                   code: section_code,
                                   department: department,
+                                  school_type: Section.school_types[:undergraduate],
                                   url: section_li.at_css('a').attribute('href').value)
       end
     end
@@ -30,11 +31,26 @@ class Crawl
       doc = Nokogiri::HTML.parse(res.body)
       department = Department.find_or_create_by(code: department_code, name: doc.title[0..-18])
 
-      doc.xpath('//*[@id="left-body-2"]/ul/li[contains(@class,"selected")]').css('ul').css('li').each do |section_li|
-        next unless section_li.at_css('ul')
+      doc.xpath('//*[@id="left-body-2"]/ul/li[contains(@class,"selected")]').at_css('ul').css('>li').each do |section_li|
+        if section_li.at_css('ul').nil? || section_li.at_css('ul').at_css('>li').nil?
+          next unless section_li.at_css('a')
+
+          query_hash = Hash[URI::decode_www_form(section_li.at_css('a').attribute('href').value)]
+          section_code = query_hash['KamokuCD']
+          Section.find_or_create_by(name: section_li.text,
+                                    code: section_code,
+                                    department: department,
+                                    school_type: Section.school_types[:postgraduate],
+                                    url: section_li.at_css('a').attribute('href').value)
+          next
+        end
 
         section_name = section_li.at_css('a').text
-        section = Section.find_or_create_by(name: section_name, department: department)
+        code = section_li.attribute('id').value.sub('kei', '')
+        section = Section.find_or_create_by(name: section_name,
+                                            code: code,
+                                            department: department,
+                                            school_type: Section.school_types[:postgraduate])
 
         section_li.at_css('ul').css('li').each do |course_li|
           query_hash = Hash[URI::decode_www_form(course_li.at_css('a').attribute('href').value)]
@@ -50,7 +66,7 @@ class Crawl
   end
 
 
-  def self.department
+  def self.lecture
     (1..7).each do |department_code|
       url = URI.parse('http://www.ocw.titech.ac.jp')
       res = Net::HTTP.start(url.host, url.port) {|http|
@@ -94,11 +110,5 @@ class Crawl
         end
       end
     end
-  end
-
-  def self.section
-  end
-
-  def self.course
   end
 end
